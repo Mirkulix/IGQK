@@ -1,0 +1,1 @@
+"""IGQK Dashboard package."""

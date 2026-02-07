@@ -1,13 +1,18 @@
 """
 IGQK - Information-Geometric Quantum Compression
 
-A theoretical framework for neural network compression combining:
+A production-ready framework for neural network compression combining:
 - Information Geometry (Fisher metric on statistical manifolds)
 - Quantum Mechanics (superposition and entanglement)
 - Compression Theory (projection onto low-dimensional submanifolds)
+
+Unified theory covering:
+- HLWT (Hybrid Laplace-Wavelet Transformation)
+- TLGT (Ternary Lie Group Theory)
+- FCHL (Fractional Calculus for Hebbian Learning)
 """
 
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 __author__ = 'IGQK Research Team'
 
 from .core.manifold import StatisticalManifold

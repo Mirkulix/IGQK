@@ -1,0 +1,1 @@
+"""IGQK REST API package."""

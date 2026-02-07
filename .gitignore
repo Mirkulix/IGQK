@@ -43,3 +43,19 @@ logs/
 *.tmp
 *.bak
 nul
+
+# Data
+data/
+*.pt
+!examples/*.pt
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Docker
+.docker/
+
+# Uploads
+/tmp/igqk_*

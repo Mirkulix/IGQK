@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  # REST API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - IGQK_UPLOAD_DIR=/data/uploads
+      - IGQK_LOG_LEVEL=info
+    volumes:
+      - igqk_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Gradio Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "igqk.cli", "dashboard", "--host", "0.0.0.0", "--port", "7860"]
+    ports:
+      - "7860:7860"
+    environment:
+      - IGQK_API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Redis for job queue (production)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - dashboard
+    restart: unless-stopped
+
+volumes:
+  igqk_data:
+  redis_data:
