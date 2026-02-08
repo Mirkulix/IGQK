@@ -28,7 +28,7 @@ Unified theory covering:
 - FCHL (Fractional Calculus for Hebbian Learning)
 """
 
-__version__ = '3.0.0'
+__version__ = '3.1.0'
 __author__ = 'IGQK Research Team'
 
 from .core.manifold import StatisticalManifold
@@ -51,6 +51,10 @@ from .hardware import HardwareAdaptiveCompiler
 from .multiobjective import MultiObjectiveFlow
 from .federated import FederatedDevice, FederatedCoordinator
 from .nas import CompressionAwareNAS
+from .export import ONNXExporter
+from .metrics import CompressionMetrics
+from .plugins import PluginRegistry
+from .zoo import ModelZoo
 
 __all__ = [
     # Core
@@ -78,4 +82,9 @@ __all__ = [
     'FederatedDevice',
     'FederatedCoordinator',
     'CompressionAwareNAS',
+    # Production v3.1
+    'ONNXExporter',
+    'CompressionMetrics',
+    'PluginRegistry',
+    'ModelZoo',
 ]
