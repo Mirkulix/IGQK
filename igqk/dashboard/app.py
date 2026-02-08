@@ -982,11 +982,85 @@ def create_dashboard():
                     outputs=[demo_output, demo_plot],
                 )
 
+            # -----------------------------------------------------------------
+            # TAB 10: Agent Swarm
+            # -----------------------------------------------------------------
+            with gr.Tab("Agent Swarm"):
+                gr.Markdown(
+                    "### Autonomous Multi-Agent System\n"
+                    "5 specialized AI agents collaborate to find optimal "
+                    "compression strategies. The Swarm discovers, experiments, "
+                    "optimizes, validates, and architects - all autonomously."
+                )
+
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        swarm_cycles = gr.Slider(
+                            1, 10, value=3, step=1, label="Agent Cycles"
+                        )
+                        swarm_btn = gr.Button(
+                            "Run Agent Swarm", variant="primary"
+                        )
+                        gr.Markdown(
+                            "**Agents:**\n"
+                            "- Researcher: discovers patterns\n"
+                            "- Architect: designs blueprints\n"
+                            "- Experimenter: tests methods\n"
+                            "- Optimizer: tunes parameters\n"
+                            "- Guardian: validates quality"
+                        )
+                    with gr.Column(scale=2):
+                        swarm_result = gr.Textbox(
+                            label="Compression Result", lines=10
+                        )
+                        swarm_agents = gr.Textbox(
+                            label="Agent Swarm Status", lines=18
+                        )
+
+                def run_agent_swarm(cycles):
+                    model = shared_state["model"]
+                    if model is None:
+                        return "No model loaded.", ""
+
+                    from igqk.agents import SwarmController
+                    import copy
+
+                    swarm = SwarmController(verbose=False)
+                    result = swarm.compress(
+                        copy.deepcopy(model),
+                        max_cycles=int(cycles),
+                    )
+                    shared_state["compressed_model"] = result.model
+
+                    # Record time travel checkpoint
+                    tt = _get_time_travel()
+                    tt.record(result.model, label="swarm_compressed")
+
+                    result_text = (
+                        f"Swarm Compression Complete!\n"
+                        f"  Strategy: {result.blueprint_strategy}\n"
+                        f"  Cycles: {result.cycles_run}\n"
+                        f"  Time: {result.total_time:.2f}s\n"
+                        f"  Layers compressed: {result.layers_compressed}\n"
+                        f"  Layers skipped: {result.layers_skipped}\n"
+                        f"  Estimated ratio: {result.estimated_ratio:.1f}x\n"
+                        f"  Quality approved: {result.quality_approved}\n"
+                    )
+
+                    agent_text = swarm.summary()
+                    return result_text, agent_text
+
+                swarm_btn.click(
+                    run_agent_swarm,
+                    inputs=[swarm_cycles],
+                    outputs=[swarm_result, swarm_agents],
+                )
+
         # Footer
         gr.Markdown(
             "---\n"
             "*IGQK - Information-Geometric Quantum Compression | "
-            "Self-Evolving AI Framework | v5.0*"
+            "Self-Evolving AI Framework | v5.1*"
         )
 
     return demo

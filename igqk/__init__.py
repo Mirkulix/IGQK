@@ -28,7 +28,7 @@ Unified theory covering:
 - FCHL (Fractional Calculus for Hebbian Learning)
 """
 
-__version__ = '5.0.0'
+__version__ = '5.1.0'
 __author__ = 'IGQK Research Team'
 
 from .core.manifold import StatisticalManifold
@@ -64,6 +64,7 @@ from .consciousness import QuantumConsciousnessMonitor
 from .dna import DNAExtractor, CompressionDNA
 from .predictor import CompressionOracle
 from .time_travel import TimeTravelDebugger
+from .agents import SwarmController
 
 __all__ = [
     # Core
@@ -108,4 +109,6 @@ __all__ = [
     'CompressionDNA',
     'CompressionOracle',
     'TimeTravelDebugger',
+    # Agent System v5.1
+    'SwarmController',
 ]
