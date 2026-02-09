@@ -40,6 +40,7 @@ class IGQKOptimizer:
         dt: float = 0.01,
         compression_type: str = 'ternary',
         rank: int = 10,
+        fisher_diagonal: bool = True,
         **compression_params
     ):
         """
@@ -52,6 +53,7 @@ class IGQKOptimizer:
             dt: Time step (default 0.01)
             compression_type: Compression type
             rank: Rank for quantum state
+            fisher_diagonal: If True, use diagonal approximation for Fisher matrix
             **compression_params: Additional compression parameters
         """
         self.model = model
@@ -59,6 +61,7 @@ class IGQKOptimizer:
         self.gamma = gamma
         self.dt = dt
         self.rank = rank
+        self.fisher_diagonal = fisher_diagonal
 
         # Initialize manifold
         self.manifold = StatisticalManifold(model)
@@ -134,7 +137,11 @@ class IGQKOptimizer:
         # Compute Fisher matrix (optional)
         fisher = None
         if compute_fisher:
-            fisher = self.manifold.fisher_information_matrix(data_loader, num_samples=1000)
+            fisher = self.manifold.fisher_information_matrix(
+                data_loader,
+                num_samples=1000,
+                diagonal=self.fisher_diagonal
+            )
 
         # Quantum evolution step
         self.rho = self.flow.step(self.rho, avg_loss, avg_grad, fisher)
@@ -192,6 +199,7 @@ class IGQKTrainer:
         hbar: float = 0.1,
         gamma: float = 0.01,
         compression_type: str = 'ternary',
+        fisher_diagonal: bool = True,
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
     ):
         """
@@ -204,6 +212,7 @@ class IGQKTrainer:
             hbar: Quantum uncertainty
             gamma: Damping parameter
             compression_type: Compression type
+            fisher_diagonal: Use diagonal Fisher approximation
             device: Device ('cuda' or 'cpu')
         """
         self.model = model.to(device)
@@ -216,7 +225,8 @@ class IGQKTrainer:
             model=model,
             hbar=hbar,
             gamma=gamma,
-            compression_type=compression_type
+            compression_type=compression_type,
+            fisher_diagonal=fisher_diagonal
         )
 
         self.history = {
@@ -229,7 +239,7 @@ class IGQKTrainer:
     def train(
         self,
         num_epochs: int,
-        compute_fisher_every: int = 10,
+        compute_fisher_every: Optional[int] = 10,
         callback: Optional[Callable] = None
     ):
         """
@@ -242,9 +252,15 @@ class IGQKTrainer:
         """
         for epoch in range(num_epochs):
             # Training step
+            should_compute_fisher = (
+                compute_fisher_every is not None
+                and compute_fisher_every > 0
+                and (epoch % compute_fisher_every == 0)
+            )
+
             metrics = self.optimizer.step(
                 self.train_loader,
-                compute_fisher=(epoch % compute_fisher_every == 0)
+                compute_fisher=should_compute_fisher
             )
 
             # Validation

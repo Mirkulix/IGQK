@@ -75,7 +75,7 @@ class QuantumGradientFlow:
             fisher_matrix: Fisher information matrix (computed if None)
 
         Returns:
-            Hamiltonian operator H [n x n]
+            Hamiltonian operator H [n x n] or diagonal [n]
         """
         # For low-rank approximation, compute Laplacian in eigenbasis
         # H = -Tr(G^{-1} ∇²ρ) ≈ -G^{-1} operating on mean
@@ -87,13 +87,18 @@ class QuantumGradientFlow:
         # Approximate Laplacian with second-order finite difference
         # For now, use regularized negative of Fisher matrix
         if fisher_matrix is None:
-            # Use identity as approximation
-            H = -torch.eye(dim, device=device)
+            # Use identity as approximation (diagonal vector)
+            H = -torch.ones(dim, device=device)
         else:
             # H = -F^{-1} (inverse Fisher acts as diffusion)
             # Add regularization for stability
-            reg = 1e-4 * torch.eye(fisher_matrix.shape[0], device=device)
-            H = -torch.linalg.inv(fisher_matrix + reg)
+            if fisher_matrix.dim() == 1:
+                # Diagonal Fisher
+                H = -1.0 / (fisher_matrix + 1e-4)
+            else:
+                # Full Fisher
+                reg = 1e-4 * torch.eye(fisher_matrix.shape[0], device=device)
+                H = -torch.linalg.inv(fisher_matrix + reg)
 
         return H
 
@@ -109,7 +114,7 @@ class QuantumGradientFlow:
         [H, ρ] = HVΛ V^T - VΛV^T H
 
         Args:
-            H: Hamiltonian operator [n x n]
+            H: Hamiltonian operator [n x n] or diagonal [n]
             rho: Quantum state
 
         Returns:
@@ -122,7 +127,12 @@ class QuantumGradientFlow:
 
         # [H, ρ] in eigenbasis
         # Since ρ is diagonal in its own basis: [H, ρ]_ij = H_ij (λ_i - λ_j)
-        H_eigen = torch.mm(torch.mm(V.T, H), V)
+        if H.dim() == 1:
+            # H is diagonal vector
+            # (V.T * H.unsqueeze(0)) @ V
+            H_eigen = torch.mm(V.T * H.unsqueeze(0), V)
+        else:
+            H_eigen = torch.mm(torch.mm(V.T, H), V)
 
         # Commutator in eigenbasis
         comm_eigen = torch.mm(H_eigen, Lambda) - torch.mm(Lambda, H_eigen)
@@ -158,7 +168,11 @@ class QuantumGradientFlow:
 
         # Natural gradient: ∇̃L = G^{-1} ∇L
         if fisher_inv is not None:
-            nat_grad = torch.mv(fisher_inv, grad)
+            if fisher_inv.dim() == 1:
+                # Diagonal inverse Fisher
+                nat_grad = fisher_inv * grad
+            else:
+                nat_grad = torch.mv(fisher_inv, grad)
         else:
             nat_grad = grad
 
@@ -221,8 +235,11 @@ class QuantumGradientFlow:
         # 3. Dissipative evolution: -γ{G^{-1}∇L, ρ}
         fisher_inv = None
         if fisher_matrix is not None:
-            reg = 1e-4 * torch.eye(fisher_matrix.shape[0], device=fisher_matrix.device)
-            fisher_inv = torch.linalg.inv(fisher_matrix + reg)
+            if fisher_matrix.dim() == 1:
+                fisher_inv = 1.0 / (fisher_matrix + 1e-4)
+            else:
+                reg = 1e-4 * torch.eye(fisher_matrix.shape[0], device=fisher_matrix.device)
+                fisher_inv = torch.linalg.inv(fisher_matrix + reg)
 
         eigenvalues_new, eigenvectors_new = self.anticommutator(grad, rho, fisher_inv)
 

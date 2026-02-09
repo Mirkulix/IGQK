@@ -156,6 +156,7 @@ def main():
         hbar=0.1,
         gamma=0.01,
         compression_type='ternary',
+        fisher_diagonal=True,
         device=device
     )
 
@@ -167,7 +168,7 @@ def main():
     num_epochs = 5  # Small number for demo
     trainer.train(
         num_epochs=num_epochs,
-        compute_fisher_every=5  # Compute Fisher matrix every 5 epochs
+        compute_fisher_every=1  # Compute Fisher matrix every epoch (diagonal approximation)
     )
 
     # Evaluate final model
