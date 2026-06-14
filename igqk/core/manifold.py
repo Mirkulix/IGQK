@@ -58,7 +58,8 @@ class StatisticalManifold:
         self,
         data_loader: torch.utils.data.DataLoader,
         empirical: bool = True,
-        num_samples: Optional[int] = None
+        num_samples: Optional[int] = None,
+        diagonal: bool = False
     ) -> torch.Tensor:
         """
         Compute Fisher Information Matrix.
@@ -69,12 +70,17 @@ class StatisticalManifold:
             data_loader: DataLoader for computing empirical expectation
             empirical: If True, use empirical Fisher (more stable)
             num_samples: Number of samples to use (None = all)
+            diagonal: If True, compute only diagonal elements (vector)
 
         Returns:
-            Fisher information matrix [dim x dim]
+            Fisher information matrix [dim x dim] or diagonal vector [dim]
         """
         device = next(self.model.parameters()).device
-        fisher = torch.zeros(self.dim, self.dim, device=device)
+        if diagonal:
+            fisher = torch.zeros(self.dim, device=device)
+        else:
+            fisher = torch.zeros(self.dim, self.dim, device=device)
+
         n_samples = 0
 
         self.model.eval()
@@ -106,7 +112,11 @@ class StatisticalManifold:
             grad = torch.cat([p.grad.flatten() for p in self.model.parameters()])
 
             # Accumulate outer product: g ⊗ g
-            fisher += torch.outer(grad, grad)
+            if diagonal:
+                fisher += grad ** 2
+            else:
+                fisher += torch.outer(grad, grad)
+
             n_samples += inputs.size(0)
 
         # Normalize by number of samples
